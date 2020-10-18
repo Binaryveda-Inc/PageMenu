@@ -30,7 +30,7 @@ open class CAPSPageMenu: UIViewController {
 
     //MARK: - Configuration
     var configuration = CAPSPageMenuConfiguration()
-    
+    var menuHeight:CGFloat = 0.0
     // MARK: - Properties
 
     let menuScrollView = UIScrollView()
@@ -139,9 +139,9 @@ open class CAPSPageMenu: UIViewController {
         //Setup storyboard
         self.view.frame = CGRect(x: 0, y: 0, width: controller.view.frame.size.width, height: controller.view.frame.size.height)
         if usingStoryboards {
-            controller.addChildViewController(self)
+            controller.addChild(self)
             controller.view.addSubview(self.view)
-            didMove(toParentViewController: controller)
+            didMove(toParent: controller)
         }
         else {
             controller.view.addSubview(self.view)
@@ -190,7 +190,8 @@ extension CAPSPageMenu {
                     }
                 }
                 
-                self.selectionIndicatorView.frame = CGRect(x: selectionIndicatorX, y: self.selectionIndicatorView.frame.origin.y, width: selectionIndicatorWidth, height: self.selectionIndicatorView.frame.height)
+                self.selectionIndicatorView.frame = CGRect(x: selectionIndicatorX, y: self.selectionIndicatorView.frame.origin.y, width: 20, height: self.selectionIndicatorView.frame.height)
+                self.selectionIndicatorView.layer.cornerRadius = 2.0
                 
                 // Switch newly selected menu item title label to selected color and old one to unselected color
                 if self.menuItems.count > 0 {
@@ -211,24 +212,33 @@ extension CAPSPageMenu {
         
         let newVC = controllerArray[index]
         
-        newVC.willMove(toParentViewController: self)
-        
+        newVC.willMove(toParent: self)
+        var menuY = menuHeight
+        if(menuHeight == 0.0){
+            menuY =  configuration.menuHeight - 20
+            menuHeight = -100
+        }else{
+            menuY = configuration.menuHeight
+            menuHeight = configuration.menuHeight
+        }
         newVC.view.frame = CGRect(x: self.view.frame.width * CGFloat(index), y: configuration.menuHeight, width: self.view.frame.width, height: self.view.frame.height - configuration.menuHeight)
         
-        self.addChildViewController(newVC)
+        self.addChild(newVC)
         self.controllerScrollView.addSubview(newVC.view)
-        newVC.didMove(toParentViewController: self)
+        newVC.didMove(toParent: self)
+        menuHeight = configuration.menuHeight
     }
     
     func removePageAtIndex(_ index : Int) {
+        
         let oldVC = controllerArray[index]
         
-        oldVC.willMove(toParentViewController: nil)
+        oldVC.willMove(toParent: nil)
         
         oldVC.view.removeFromSuperview()
-        oldVC.removeFromParentViewController()
+        oldVC.removeFromParent()
         
-        oldVC.didMove(toParentViewController: nil)
+        oldVC.didMove(toParent: nil)
     }
     
     
@@ -239,12 +249,9 @@ extension CAPSPageMenu {
         controllerScrollView.contentSize = CGSize(width: self.view.frame.width * CGFloat(controllerArray.count), height: self.view.frame.height - configuration.menuHeight)
         
         let oldCurrentOrientationIsPortrait : Bool = currentOrientationIsPortrait
+        currentOrientationIsPortrait = UIDevice.current.orientation.isPortrait
         
-        if UIDevice.current.orientation != UIDeviceOrientation.unknown {
-            currentOrientationIsPortrait = UIDevice.current.orientation.isPortrait || UIDevice.current.orientation.isFlat
-        }
-        
-        if (oldCurrentOrientationIsPortrait && UIDevice.current.orientation.isLandscape) || (!oldCurrentOrientationIsPortrait && (UIDevice.current.orientation.isPortrait || UIDevice.current.orientation.isFlat)) {
+        if (oldCurrentOrientationIsPortrait && UIDevice.current.orientation.isLandscape) || (!oldCurrentOrientationIsPortrait && UIDevice.current.orientation.isPortrait) {
             didLayoutSubviewsAfterRotation = true
             
             //Resize menu items if using as segmented control
